@@ -1,18 +1,22 @@
 // MovingObject class
 
 var Asteroids = (function(){
-	function MovingObject(x, y, dx, dy){
+	function MovingObject(x, y, dx, dy, maxX, maxY){
 		var that = this;
 		that.x = x;
 		that.y = y;
 		that.dx = dx;
 		that.dy = dy;
+		that.maxX = maxX;
+		that.maxY = maxY;
 	}
 
 	MovingObject.prototype.updatePos = function(){
 		var that = this;
-		that.x = that.x + that.dx;
-		that.y = that.y + that.dy;
+		that.x = (that.x + that.dx) % that.maxX;
+		that.y = (that.y + that.dy) % that.maxY;
+		that.x = that.x < 0 ? that.maxX : that.x;
+		that.y = that.y < 0 ? that.maxY : that.y;
 	}
 
 	MovingObject.prototype.offScreen = function(xdim, ydim){
@@ -25,7 +29,7 @@ var Asteroids = (function(){
 
 	function Asteroid(x, y, dx, dy){
 		MovingObject.apply(this, arguments);
-		this.radius = 10;
+		this.radius = 20;
 	}
 	Asteroid.prototype = new MovingObject;
 
@@ -33,8 +37,10 @@ var Asteroids = (function(){
 		return new Asteroid(
 			maxX * Math.random(),
 			maxY * Math.random(),
-			maxD * Math.random(),
-			maxD * Math.random()
+			plusOrMinus() * maxD * Math.random(),
+			plusOrMinus() * maxD * Math.random(),
+			maxX,
+			maxY
 			);
 	};
 
@@ -60,7 +66,7 @@ var Asteroids = (function(){
 
 	function Game(xDim, yDim, numAsteroids){
 		var that = this;
-		var maxD = 10;
+		var maxD = 2;
 
 		that.xDim = xDim;
 		that.yDim = yDim;
@@ -96,24 +102,32 @@ var Asteroids = (function(){
 		var that = this;
 		window.setInterval(function (){
 			that.update();
-			_.each(that.asteroids, function(asteroid, idx, list){
-				if (asteroid.offScreen(that.xDim, that.yDim)){
-					delete that.asteroids[idx];
-				};
-			});
+			// _.each(that.asteroids, function(asteroid, idx, list){
+// 				if (asteroid.offScreen(that.xDim, that.yDim)){
+// 					delete that.asteroids[idx];
+// 				};
+// 			});
 			that.draw(ctx);
 		}, 32);
+	};
+
+	var plusOrMinus = function (){
+		if (Math.random() > .5){
+			return 1;
+		} else {
+			return -1;
+		};
 	};
 
 	return {
 		Asteroid: Asteroid,
 		Game: Game
-	}
+	};
 })();
 
 
 var canvas = document.getElementById('canvas_id');
-new Asteroids.Game(500, 375, 1).start(canvas);
+new Asteroids.Game(500, 375, 10).start(canvas);
 
 // var game = new Game(500, 375, 10).start(canvas);
 
