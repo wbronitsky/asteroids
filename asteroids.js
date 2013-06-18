@@ -31,7 +31,7 @@ var Asteroids = (function(){
 		MovingObject.apply(this, arguments);
 		this.radius = 20;
 	}
-	Asteroid.prototype = new MovingObject;
+	Asteroid.prototype = new MovingObject();
 
 	Asteroid.randomAsteroid = function (maxX, maxY, maxD){
 		return new Asteroid(
@@ -47,7 +47,7 @@ var Asteroids = (function(){
 	Asteroid.prototype.draw = function(ctx) {
 		var that = this;
 
-		ctx.fillStyle = "orange";
+		ctx.fillStyle = "blue";
 		ctx.beginPath();
 		ctx.arc(
 			that.x,
@@ -62,6 +62,129 @@ var Asteroids = (function(){
 	};
 
 
+	// Ship class
+
+	function Ship(x, y, dx, dy, maxX, maxY){
+		MovingObject.apply(this, arguments);
+		this.angle = 3 * Math.PI/2;
+	};
+	Ship.prototype = new MovingObject();
+
+	Ship.prototype.draw = function(ctx) {
+		var that = this;
+
+		ctx.fillStyle = "red";
+		ctx.beginPath();
+		ctx.arc(
+			that.x,
+			that.y,
+			10,
+			0,
+			2 * Math.PI,
+			false
+		);
+
+		ctx.fill();
+	};
+
+
+	Ship.prototype.isHit = function(asteroids) {
+		var that = this;
+		var shipRadius = 10; // Math.pow(2 * Math.pow(12.5, 2), 0.5);
+		var ax, ay, distance, sumOfRadii;
+
+		return _.any(asteroids, function(asteroid) {
+			ax = asteroid.x;
+			ay = asteroid.y;
+			var distance = Math.pow(
+				(Math.pow((ax - that.x), 2) + Math.pow((ay - that.y), 2)),
+				0.5
+			);
+
+			sumOfRadii = asteroid.radius + shipRadius;
+
+			return distance < sumOfRadii;
+		});
+	};
+
+	Ship.prototype.power = function(angle) {
+		var that = this;
+		that.dx += Math.cos(angle)/500;
+		that.dy += Math.sin(angle)/500;
+	};
+
+	Ship.prototype.rotate = function(angle) {
+		var that = this;
+		that.angle += angle;
+	};
+
+	Ship.prototype.fireBullet = function(bulletArray) {
+		var that = this;
+		var bullet = new Bullet(that);
+		bulletArray.push(bullet);
+	};
+
+	//Bullet class
+
+	function Bullet(ship) {
+		var that = this;
+		that.angle = ship.angle;
+		that.x = ship.x;
+		that.y = ship.y;
+		that.dx = ship.dx + Math.cos(that.angle)*10;
+		that.dy = ship.dy + Math.sin(that.angle)*10;
+		that.maxX = ship.maxX;
+		that.maxY = ship.maxY;
+	}
+	Bullet.prototype = new MovingObject();
+
+	Bullet.prototype.draw = function(ctx) {
+		var that = this;
+
+		ctx.fillStyle = "gray";
+		ctx.beginPath();
+		ctx.arc(
+			that.x,
+			that.y,
+			2,
+			0,
+			2 * Math.PI,
+			false
+		);
+
+		ctx.fill();
+	};
+
+	Bullet.prototype.updatePos = function(){
+		var that = this;
+		that.x = (that.x + that.dx);
+		that.y = (that.y + that.dy);
+	};
+
+	Bullet.prototype.isHit = function(asteroids) {
+		var that = this;
+		var bulletRadius = 2;
+		var ax, ay, distance, sumOfRadii;
+
+		_.each(asteroids, function(asteroid, idx) {
+			ax = asteroid.x;
+			ay = asteroid.y;
+			var distance = Math.pow(
+				(Math.pow((ax - that.x), 2) + Math.pow((ay - that.y), 2)),
+				0.5
+			);
+
+			sumOfRadii = asteroid.radius + bulletRadius;
+
+			if (distance < sumOfRadii) {
+				delete asteroids[idx];
+				return true;
+			};
+		});
+		return false;
+	};
+
+
 	// Game class
 
 	function Game(xDim, yDim, numAsteroids){
@@ -72,10 +195,13 @@ var Asteroids = (function(){
 		that.yDim = yDim;
 
 		that.asteroids = [];
+		that.bullets = [];
 		for (var i = 0; i < numAsteroids; i++){
 			that.asteroids.push(Asteroid.randomAsteroid(xDim, yDim, maxD));
-		}
-	}
+		};
+
+		that.ship = new Ship(xDim/2, yDim/2, 0, 0, xDim, yDim);
+	};
 
 	Game.prototype.update = function() {
 		var that = this;
@@ -83,30 +209,67 @@ var Asteroids = (function(){
 		_.each(that.asteroids, function(asteroid){
 			asteroid.updatePos();
 		});
+		that.ship.updatePos();
+		_.each(that.bullets, function(bullet){
+			bullet.updatePos();
+		});
 	};
 
 	Game.prototype.draw = function(ctx) {
 		var that = this;
 		ctx.clearRect(0, 0, that.xDim, that.yDim);
 
+		that.ship.draw(ctx);
 		_.each(that.asteroids, function(asteroid) {
-			console.log(asteroid);
+			// console.log(asteroid);
 			asteroid.draw(ctx);
+		});
+		_.each(that.bullets, function(bullet) {
+			bullet.draw(ctx);
 		});
 	};
 
-	// Write Game.prototype.start(canvas)
 	Game.prototype.start = function(canvas) {
 		var ctx = canvas.getContext('2d');
 
 		var that = this;
-		window.setInterval(function (){
+		var loop = window.setInterval(function (){
+			// Key bindinds
+			key('up', function(event, handler){
+				that.ship.power(that.ship.angle);
+			});
+			key('right', function(event, handler){
+				that.ship.rotate(0.003);
+			});
+			key('left', function(event, handler){
+				that.ship.rotate(-0.003);
+			});
+			key('space', function(event, handler){
+				that.ship.fireBullet(that.bullets);
+			});
+
+			_.each(that.bullets, function(bullet, idx) {
+				if (bullet.offScreen(that.xDim, that.yDim) ||
+						bullet.isHit(that.asteroids)){
+					delete that.bullets[idx];
+				};
+			});
 			that.update();
 			// _.each(that.asteroids, function(asteroid, idx, list){
-// 				if (asteroid.offScreen(that.xDim, that.yDim)){
-// 					delete that.asteroids[idx];
-// 				};
-// 			});
+			// 	if (asteroid.offScreen(that.xDim, that.yDim)){
+			// 		delete that.asteroids[idx];
+			// 	};
+			// });
+			if (that.ship.isHit(that.asteroids)) {
+				clearInterval(loop);
+				alert(":::GAME OVER:::");
+				console.log("You've been hit!")
+			};
+			if (_.all(that.asteroids, function(asteroid){asteroid === null})) {
+				clearInterval(loop);
+				alert("YOU WIN");
+				console.log("Winner")
+			}
 			that.draw(ctx);
 		}, 32);
 	};
@@ -127,39 +290,6 @@ var Asteroids = (function(){
 
 
 var canvas = document.getElementById('canvas_id');
+canvas.style.backgroundColor = "black";
 new Asteroids.Game(500, 375, 10).start(canvas);
 
-// var game = new Game(500, 375, 10).start(canvas);
-
-
-
-
-
-
-
-
-
-
-
-// @all To clear up some confusion: the only element in your html page will be a <canvas> element with a width and a height. You can use javascript (document.getElementById('myCanvasElsId')) to grab the canvas element so you can get its context and all the other good stuff. The rest of your application will happen in javascript and interact with the canvas element (no jQuery involved)
-
-// Game.prototype.start = function (canvasEl) {
-//   // get a 2d canvas drawing context. The canvas API lets us call
-//   // a `getContext` method on a cnvas DOM element.
-//   var ctx = canvasEl.getContext("2d");
-//
-//   // render at 60 FPS
-//   var that = this;
-//   window.setInterval(function () {
-//     that.render(ctx);
-//   }, 1000);
-// };
-//
-// $(function () {
-//   var canvas = $("<canvas width='" + 500 +
-//                  "' height='" + 500 + "'></canvas>");
-//   $('body').append(canvas);
-//
-//   // `canvas.get(0)` unwraps the jQuery'd DOM element;
-//   new Circles.Game(500, 500, 10).start(canvas.get(0));
-// });
