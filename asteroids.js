@@ -79,8 +79,8 @@ var Asteroids = (function(){
 			that.x,
 			that.y,
 			10,
-			0,
-			2 * Math.PI,
+			Math.PI * (5/4) + that.angle,
+			Math.PI * (3/4) + that.angle,
 			false
 		);
 
@@ -141,7 +141,7 @@ var Asteroids = (function(){
 	Bullet.prototype.draw = function(ctx) {
 		var that = this;
 
-		ctx.fillStyle = "gray";
+		ctx.fillStyle = "white";
 		ctx.beginPath();
 		ctx.arc(
 			that.x,
@@ -161,7 +161,7 @@ var Asteroids = (function(){
 		that.y = (that.y + that.dy);
 	};
 
-	Bullet.prototype.isHit = function(asteroids) {
+	Bullet.prototype.isHit = function(asteroids, game) {
 		var that = this;
 		var bulletRadius = 2;
 		var ax, ay, distance, sumOfRadii;
@@ -177,6 +177,22 @@ var Asteroids = (function(){
 			sumOfRadii = asteroid.radius + bulletRadius;
 
 			if (distance < sumOfRadii) {
+				if (asteroid.radius > 5){
+					_.times(3, function(){
+						var oldAstRadius = asteroid.radius
+						var distance = Math.random();
+						var ast = new Asteroid(
+																	 asteroid.x + Math.cos(distance) * 10,
+																	 asteroid.y + Math.sin(distance) * 10,
+																 	 asteroid.dx * 2 * Math.random(),
+																 	 asteroid.dy * 2 * Math.random(),
+																 	 game.xDim,
+																 	 game.yDim);
+						ast.radius = oldAstRadius/2;
+						game.asteroids.push(ast);
+						console.log(game.asteroids.length);
+					})
+				};
 				delete asteroids[idx];
 				return true;
 			};
@@ -250,7 +266,7 @@ var Asteroids = (function(){
 
 			_.each(that.bullets, function(bullet, idx) {
 				if (bullet.offScreen(that.xDim, that.yDim) ||
-						bullet.isHit(that.asteroids)){
+						bullet.isHit(that.asteroids, that)){
 					delete that.bullets[idx];
 				};
 			});
