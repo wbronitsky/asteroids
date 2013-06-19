@@ -193,6 +193,7 @@ var Asteroids = (function(){
 						console.log(game.asteroids.length);
 					})
 				};
+				game.points += 10;
 				delete asteroids[idx];
 				return true;
 			};
@@ -206,6 +207,7 @@ var Asteroids = (function(){
 	function Game(xDim, yDim, numAsteroids){
 		var that = this;
 		var maxD = 2;
+		that.points = 0;
 
 		that.xDim = xDim;
 		that.yDim = yDim;
@@ -235,6 +237,9 @@ var Asteroids = (function(){
 		var that = this;
 		ctx.clearRect(0, 0, that.xDim, that.yDim);
 
+		ctx.fillStyle = "white";
+		ctx.font = "bold 18px Futura";
+		ctx.fillText("" + that.points, 10, 20);
 		that.ship.draw(ctx);
 		_.each(that.asteroids, function(asteroid) {
 			// console.log(asteroid);
