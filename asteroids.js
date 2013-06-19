@@ -17,7 +17,7 @@ var Asteroids = (function(){
 		that.y = (that.y + that.dy) % that.maxY;
 		that.x = that.x < 0 ? that.maxX : that.x;
 		that.y = that.y < 0 ? that.maxY : that.y;
-	}
+	};
 
 	MovingObject.prototype.offScreen = function(xdim, ydim){
 		var that = this;
@@ -109,13 +109,14 @@ var Asteroids = (function(){
 
 	Ship.prototype.power = function(angle) {
 		var that = this;
-		that.dx += Math.cos(angle)/500;
-		that.dy += Math.sin(angle)/500;
+		that.dx += Math.cos(angle)/2;
+		that.dy += Math.sin(angle)/2;
 	};
 
 	Ship.prototype.rotate = function(angle) {
 		var that = this;
 		that.angle += angle;
+		console.log("Rotated ship " + angle);
 	};
 
 	Ship.prototype.fireBullet = function(bulletArray) {
@@ -254,20 +255,24 @@ var Asteroids = (function(){
 		var ctx = canvas.getContext('2d');
 
 		var that = this;
+
+		key('up', function(event, handler){
+			that.ship.power(that.ship.angle);
+		});
+		key('right', function(event, handler){
+			that.ship.rotate(0.5);
+			console.log("right => rotate 0.003");
+		});
+		key('left', function(event, handler){
+			that.ship.rotate(-0.5);
+			console.log("left => rotate -0.003");
+		});
+		key('space', function(event, handler){
+			that.ship.fireBullet(that.bullets);
+		});
+
 		var loop = window.setInterval(function (){
 			// Key bindinds
-			key('up', function(event, handler){
-				that.ship.power(that.ship.angle);
-			});
-			key('right', function(event, handler){
-				that.ship.rotate(0.003);
-			});
-			key('left', function(event, handler){
-				that.ship.rotate(-0.003);
-			});
-			key('space', function(event, handler){
-				that.ship.fireBullet(that.bullets);
-			});
 
 			_.each(that.bullets, function(bullet, idx) {
 				if (bullet.offScreen(that.xDim, that.yDim) ||
@@ -312,5 +317,5 @@ var Asteroids = (function(){
 
 var canvas = document.getElementById('canvas_id');
 canvas.style.backgroundColor = "black";
-new Asteroids.Game(500, 375, 10).start(canvas);
+new Asteroids.Game(500, 375, 1).start(canvas);
 
